@@ -61,15 +61,17 @@ class ProjectViewsTests(TestCase):
 
         created_project = Project.objects.get(name="New project")
         self.assertEqual(created_project.owner, self.owner)
-        self.assertTrue(created_project.participants.filter(id=self.owner.id).exists())
+        self.assertTrue(
+            created_project.participants.filter(
+                id=self.owner.id).exists())
 
     def test_toggle_participation(self):
         self.client.force_login(self.participant)
         response = self.client.post(
             reverse(
-                "projects:toggle_participate", kwargs={"project_id": self.project.id}
-            )
-        )
+                "projects:toggle_participate",
+                kwargs={
+                    "project_id": self.project.id}))
         self.assertEqual(response.status_code, HTTPStatus.OK)
         self.assertTrue(
             self.project.participants.filter(id=self.participant.id).exists()
@@ -78,8 +80,10 @@ class ProjectViewsTests(TestCase):
     def test_complete_project_by_owner(self):
         self.client.force_login(self.owner)
         response = self.client.post(
-            reverse("projects:complete_project", kwargs={"project_id": self.project.id})
-        )
+            reverse(
+                "projects:complete_project",
+                kwargs={
+                    "project_id": self.project.id}))
         self.assertEqual(response.status_code, HTTPStatus.OK)
 
         self.project.refresh_from_db()
@@ -88,7 +92,11 @@ class ProjectViewsTests(TestCase):
     def test_toggle_favorite(self):
         self.client.force_login(self.participant)
         response = self.client.post(
-            reverse("projects:toggle_favorite", kwargs={"project_id": self.project.id})
-        )
+            reverse(
+                "projects:toggle_favorite",
+                kwargs={
+                    "project_id": self.project.id}))
         self.assertEqual(response.status_code, HTTPStatus.OK)
-        self.assertTrue(self.participant.favorites.filter(id=self.project.id).exists())
+        self.assertTrue(
+            self.participant.favorites.filter(
+                id=self.project.id).exists())

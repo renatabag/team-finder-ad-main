@@ -1,118 +1,177 @@
-from pathlib import Path
+from http import HTTPStatus
 
-from decouple import config
+from django.contrib.auth.decorators import login_required
+from django.http import JsonResponse
+from django.shortcuts import get_object_or_404, redirect, render
+from django.views.decorators.http import require_POST
 
-BASE_DIR = Path(__file__).resolve().parent.parent
+from utils import paginate_queryset
 
+from .forms import ProjectForm
+from .models import Project
 
-SECRET_KEY = config("DJANGO_SECRET_KEY", default="dev-secret-key")
-
-DEBUG = config("DJANGO_DEBUG", default=True, cast=bool)
-
-# Настройка ALLOWED_HOSTS из переменных окружения
-# Ожидаем строку с разделителями-запятыми, например: "example.com,www.example.com,localhost"
-ALLOWED_HOSTS = config(
-    "DJANGO_ALLOWED_HOSTS",
-    default="localhost,127.0.0.1",
-    cast=lambda v: [host.strip() for host in v.split(",") if host.strip()]
-)
-
-# Удаляем лишнюю переменную TASK_VERSION - она не используется
-# TASK_VERSION = config("TASK_VERSION", default="1")
-
-# URL для редиректа после логина (для @login_required)
-LOGIN_URL = "/accounts/login/"
-
-INSTALLED_APPS = [
-    "django.contrib.admin",
-    "django.contrib.auth",
-    "django.contrib.contenttypes",
-    "django.contrib.sessions",
-    "django.contrib.messages",
-    "django.contrib.staticfiles",
-    "users",
-    "projects",
-]
-
-MIDDLEWARE = [
-    "django.middleware.security.SecurityMiddleware",
-    "django.contrib.sessions.middleware.SessionMiddleware",
-    "django.middleware.common.CommonMiddleware",
-    "django.middleware.csrf.CsrfViewMiddleware",
-    "django.contrib.auth.middleware.AuthenticationMiddleware",
-    "django.contrib.messages.middleware.MessageMiddleware",
-    "django.middleware.clickjacking.XFrameOptionsMiddleware",
-]
-
-ROOT_URLCONF = "team_finder.urls"
-
-# Убираем TASK_VERSION из TEMPLATES, так как проект должен работать с единой версией шаблонов
-TEMPLATES = [
-    {
-        "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [BASE_DIR / "templates"],  # Используем единую директорию шаблонов
-        "APP_DIRS": True,
-        "OPTIONS": {
-            "context_processors": [
-                "django.template.context_processors.request",
-                "django.contrib.auth.context_processors.auth",
-                "django.contrib.messages.context_processors.messages",
-            ],
-        },
-    },
-]
-
-WSGI_APPLICATION = "team_finder.wsgi.application"
+PROJECTS_PER_PAGE = 12
 
 
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.postgresql",
-        "NAME": config("POSTGRES_DB"),
-        "USER": config("POSTGRES_USER"),
-        "PASSWORD": config("POSTGRES_PASSWORD"),
-        "HOST": config("POSTGRES_HOST", default="localhost"),
-        "PORT": config("POSTGRES_PORT", default=5432, cast=int),
-    }
-}
+def project_list_view(request):
+    """Список всех проектов."""
+    queryset = Project.objects.select_related("owner").order_by("-created_at")
+    page_obj = paginate_queryset(request, queryset, PROJECTS_PER_PAGE)
 
-
-AUTH_PASSWORD_VALIDATORS = []
-if not DEBUG:
-    AUTH_PASSWORD_VALIDATORS.extend(
-        [
-            {
-                "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",
-            },
-            {
-                "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",
-            },
-            {
-                "NAME": "django.contrib.auth.password_validation.CommonPasswordValidator",
-            },
-            {
-                "NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",
-            },
-        ]
+    return render(
+        request,
+        "projects/project_list.html",
+        {"projects": page_obj},
     )
 
 
-LANGUAGE_CODE = "ru-ru"
+def project_detail_view(request, project_id):
+    """Детальная страница проекта."""
+    project = get_object_or_404(Project.objects.select_related(
+        "owner").prefetch_related("participants"), id=project_id, )
 
-TIME_ZONE = "Europe/Moscow"
-
-USE_I18N = True
-
-USE_TZ = True
-
-
-STATIC_URL = "static/"
-STATICFILES_DIRS = [BASE_DIR / "static"]
-
-MEDIA_URL = "/media/"
-MEDIA_ROOT = BASE_DIR / "media"
+    return render(
+        request,
+        "projects/project-details.html",
+        {"project": project},
+    )
 
 
-DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+@login_required
+def create_project_view(request):
+    """Создание нового проекта."""
+    form = ProjectForm(request.POST or None)
 
-AUTH_USER_MODEL = "users.User"
+    if form.is_valid():
+        project_obj = form.save(commit=False)
+        project_obj.owner = request.user
+        project_obj.save()
+        project_obj.participants.add(request.user)
+        return redirect("projects:detail", project_id=project_obj.id)
+
+    return render(
+        request,
+        "projects/create-project.html",
+        {
+            "form": form,
+            "is_edit": False,
+        },
+    )
+
+
+@login_required
+def edit_project_view(request, project_id):
+    """Редактирование проекта."""
+    project_obj = get_object_or_404(Project, id=project_id)
+
+    if project_obj.owner != request.user:
+        return redirect("projects:detail", project_id=project_obj.id)
+
+    form = ProjectForm(request.POST or None, instance=project_obj)
+
+    if form.is_valid():
+        updated_project = form.save()
+        return redirect("projects:detail", project_id=updated_project.id)
+
+    return render(
+        request,
+        "projects/create-project.html",
+        {
+            "form": form,
+            "is_edit": True,
+        },
+    )
+
+
+@require_POST
+@login_required
+def toggle_participation_view(request, project_id):
+    """Участие/отказ от участия в проекте."""
+    project_obj = get_object_or_404(Project, id=project_id)
+    user = request.user
+
+    already_joined = project_obj.participants.filter(id=user.id).exists()
+
+    if already_joined:
+        project_obj.participants.remove(user)
+    else:
+        project_obj.participants.add(user)
+
+    return JsonResponse(
+        {
+            "status": "ok",
+            "participant": not already_joined,
+        },
+        status=HTTPStatus.OK,
+    )
+
+
+@require_POST
+@login_required
+def complete_project_view(request, project_id):
+    """Завершение проекта (только для владельца)."""
+    project_obj = get_object_or_404(Project, id=project_id)
+
+    if project_obj.owner != request.user:
+        return JsonResponse(
+            {"status": "error", "message": "Только владелец может завершить проект"},
+            status=HTTPStatus.FORBIDDEN,
+        )
+
+    if project_obj.status != Project.STATUS_OPEN:
+        return JsonResponse(
+            {"status": "error", "message": "Проект уже завершён"},
+            status=HTTPStatus.BAD_REQUEST,
+        )
+
+    project_obj.status = Project.STATUS_CLOSED
+    project_obj.save(update_fields=["status"])
+
+    return JsonResponse(
+        {
+            "status": "ok",
+            "project_status": Project.STATUS_CLOSED,
+        },
+        status=HTTPStatus.OK,
+    )
+
+
+@require_POST
+@login_required
+def toggle_favorite_view(request, project_id):
+    """Добавление/удаление проекта в избранное."""
+    project_obj = get_object_or_404(Project, id=project_id)
+    user = request.user
+
+    in_favorites = user.favorites.filter(id=project_obj.id).exists()
+
+    if in_favorites:
+        user.favorites.remove(project_obj)
+    else:
+        user.favorites.add(project_obj)
+
+    return JsonResponse(
+        {
+            "status": "ok",
+            "favorited": not in_favorites,
+        },
+        status=HTTPStatus.OK,
+    )
+
+
+@login_required
+def favorite_projects_view(request):
+    """Список избранных проектов пользователя."""
+    queryset = (
+        request.user.favorites.select_related("owner")
+        .prefetch_related("participants")
+        .order_by("-created_at")
+    )
+
+    page_obj = paginate_queryset(request, queryset, PROJECTS_PER_PAGE)
+
+    return render(
+        request,
+        "projects/favorite_projects.html",
+        {"projects": page_obj},
+    )

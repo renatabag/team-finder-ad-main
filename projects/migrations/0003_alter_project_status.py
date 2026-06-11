@@ -6,13 +6,17 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('projects', '0002_initial'),
+        ("projects", "0002_initial"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='project',
-            name='status',
-            field=models.CharField(choices=[('open', 'Open'), ('closed', 'Closed')], default='open', max_length=6),
+            model_name="project",
+            name="status",
+            field=models.CharField(
+                choices=[("open", "Open"), ("closed", "Closed")],
+                default="open",
+                max_length=6,
+            ),
         ),
     ]

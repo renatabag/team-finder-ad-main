@@ -57,7 +57,8 @@ def users_list_view(request):
     if request.user.is_authenticated and active_filter:
         if active_filter == FILTER_FAVORITE_AUTHORS:
             favorite_ids = request.user.favorites.values_list("id", flat=True)
-            queryset = queryset.filter(owned_projects__id__in=favorite_ids).distinct()
+            queryset = queryset.filter(
+                owned_projects__id__in=favorite_ids).distinct()
 
         elif active_filter == FILTER_PARTICIPATED_AUTHORS:
             participated_ids = request.user.participated_projects.values_list(
@@ -68,7 +69,8 @@ def users_list_view(request):
             ).distinct()
 
         elif active_filter == FILTER_LIKED_MY_PROJECTS:
-            my_project_ids = request.user.owned_projects.values_list("id", flat=True)
+            my_project_ids = request.user.owned_projects.values_list(
+                "id", flat=True)
             queryset = (
                 queryset.filter(favorites__id__in=my_project_ids)
                 .exclude(id=request.user.id)
@@ -76,7 +78,8 @@ def users_list_view(request):
             )
 
         elif active_filter == FILTER_MY_PROJECT_PARTICIPANTS:
-            my_project_ids = request.user.owned_projects.values_list("id", flat=True)
+            my_project_ids = request.user.owned_projects.values_list(
+                "id", flat=True)
             queryset = (
                 queryset.filter(participated_projects__id__in=my_project_ids)
                 .exclude(id=request.user.id)

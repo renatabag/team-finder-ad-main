@@ -55,20 +55,22 @@ def pick_avatar_background(seed: str) -> str:
 
 
 def get_avatar_font(font_size: int = AVATAR_FONT_SIZE):
-    """Получение шрифта для аватара с fallback на стандартный."""
+    """
+    Получение шрифта для аватара.
+
+    Для pillow==11.3.0 параметр size поддерживается напрямую.
+    """
     try:
         return ImageFont.truetype(AVATAR_FONT_NAME, font_size)
     except (OSError, IOError):
-        # Если шрифт не найден, используем стандартный с увеличенным размером
-        try:
-            # Пытаемся использовать шрифт большего размера
-            return ImageFont.load_default().font_variant(size=font_size)
-        except AttributeError:
-            # Если font_variant недоступен, используем стандартный шрифт
-            return ImageFont.load_default()
+        # Если шрифт не найден, используем стандартный с нужным размером
+        return ImageFont.load_default(size=font_size)
 
 
-def build_avatar_file(name: str, email: str, size: int = AVATAR_SIZE) -> ContentFile:
+def build_avatar_file(
+        name: str,
+        email: str,
+        size: int = AVATAR_SIZE) -> ContentFile:
     """
     Генерация avatar-файла на основе имени и email.
 
@@ -89,31 +91,22 @@ def build_avatar_file(name: str, email: str, size: int = AVATAR_SIZE) -> Content
 
     font = get_avatar_font(AVATAR_FONT_SIZE)
 
-    # Центрируем текст
-    try:
-        # Для новых версий Pillow
-        bbox = canvas.textbbox((0, 0), first_letter, font=font)
-        text_width = bbox[2] - bbox[0]
-        text_height = bbox[3] - bbox[1]
-    except AttributeError:
-        # Для старых версий Pillow
-        text_width, text_height = canvas.textsize(first_letter, font=font)
+    # Центрируем текст (для pillow==11.3.0 используем textbbox)
+    bbox = canvas.textbbox((0, 0), first_letter, font=font)
+    text_width = bbox[2] - bbox[0]
+    text_height = bbox[3] - bbox[1]
 
     text_x = (size - text_width) / 2
     text_y = (size - text_height) / 2
 
-    canvas.text(
-        (text_x, text_y),
-        first_letter,
-        fill=AVATAR_TEXT_COLOR,
-        font=font
-    )
+    canvas.text((text_x, text_y), first_letter,
+                fill=AVATAR_TEXT_COLOR, font=font)
 
     binary_stream = BytesIO()
     avatar_image.save(binary_stream, format="PNG")
 
     # Создаём безопасное имя файла
-    safe_email = email.replace('@', '_').replace('.', '_')
+    safe_email = email.replace("@", "_").replace(".", "_")
     file_name = f"avatar_{safe_email}.png"
 
     return ContentFile(binary_stream.getvalue(), name=file_name)

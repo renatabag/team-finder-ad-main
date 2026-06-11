@@ -13,19 +13,11 @@ DEBUG = config("DJANGO_DEBUG", default=True, cast=bool)
 ALLOWED_HOSTS = config(
     "DJANGO_ALLOWED_HOSTS",
     default="localhost,127.0.0.1",
-    cast=lambda v: [host.strip() for host in v.split(",") if host.strip()]
+    cast=lambda v: [host.strip() for host in v.split(",") if host.strip()],
 )
 
-# Используем TASK_VERSION для поддержки разных версий шаблонов
-# Проверяем, что версия корректная
-TASK_VERSION = config("TASK_VERSION", default="1")
-VALID_TASK_VERSIONS = ["1", "2", "3"]
-
-if TASK_VERSION not in VALID_TASK_VERSIONS:
-    raise ValueError(f"TASK_VERSION must be one of {VALID_TASK_VERSIONS}, got '{TASK_VERSION}'")
-
-# URL для редиректа после логина (для @login_required)
-LOGIN_URL = "/accounts/login/"
+# URL для редиректа после логина (используем имя URL)
+LOGIN_URL = "users:login"
 
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -34,6 +26,7 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "core",  # ← ДОБАВЛЕНО
     "users",
     "projects",
 ]
@@ -50,11 +43,10 @@ MIDDLEWARE = [
 
 ROOT_URLCONF = "team_finder.urls"
 
-# Используем TASK_VERSION для выбора директории с шаблонами
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [BASE_DIR / f"templates_var{TASK_VERSION}"],
+        "DIRS": [BASE_DIR / "templates"],
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
@@ -73,9 +65,9 @@ WSGI_APPLICATION = "team_finder.wsgi.application"
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
-        "NAME": config("POSTGRES_DB"),
-        "USER": config("POSTGRES_USER"),
-        "PASSWORD": config("POSTGRES_PASSWORD"),
+        "NAME": config("POSTGRES_DB", default="teamfinder"),
+        "USER": config("POSTGRES_USER", default="renatabagdanova"),
+        "PASSWORD": config("POSTGRES_PASSWORD", default=""),
         "HOST": config("POSTGRES_HOST", default="localhost"),
         "PORT": config("POSTGRES_PORT", default=5432, cast=int),
     }
