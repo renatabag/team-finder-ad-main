@@ -5,11 +5,11 @@ from django.shortcuts import get_object_or_404, redirect, render
 from utils import paginate_queryset
 
 from .constants import (
-    USERS_PER_PAGE,
     FILTER_FAVORITE_AUTHORS,
-    FILTER_PARTICIPATED_AUTHORS,
     FILTER_LIKED_MY_PROJECTS,
     FILTER_MY_PROJECT_PARTICIPANTS,
+    FILTER_PARTICIPATED_AUTHORS,
+    USERS_PER_PAGE,
 )
 from .forms import LoginForm, ProfileEditForm, RegisterForm, UserPasswordChangeForm
 from .models import User
@@ -57,33 +57,20 @@ def users_list_view(request):
     if request.user.is_authenticated and active_filter:
         if active_filter == FILTER_FAVORITE_AUTHORS:
             favorite_ids = request.user.favorites.values_list("id", flat=True)
-            queryset = queryset.filter(
-                owned_projects__id__in=favorite_ids).distinct()
+            queryset = queryset.filter(owned_projects__id__in=favorite_ids).distinct()
 
         elif active_filter == FILTER_PARTICIPATED_AUTHORS:
-            participated_ids = request.user.participated_projects.values_list(
-                "id", flat=True
-            )
-            queryset = queryset.filter(
-                owned_projects__id__in=participated_ids
-            ).distinct()
+            participated_ids = request.user.participated_projects.values_list("id", flat=True)
+            queryset = queryset.filter(owned_projects__id__in=participated_ids).distinct()
 
         elif active_filter == FILTER_LIKED_MY_PROJECTS:
-            my_project_ids = request.user.owned_projects.values_list(
-                "id", flat=True)
-            queryset = (
-                queryset.filter(favorites__id__in=my_project_ids)
-                .exclude(id=request.user.id)
-                .distinct()
-            )
+            my_project_ids = request.user.owned_projects.values_list("id", flat=True)
+            queryset = queryset.filter(favorites__id__in=my_project_ids).exclude(id=request.user.id).distinct()
 
         elif active_filter == FILTER_MY_PROJECT_PARTICIPANTS:
-            my_project_ids = request.user.owned_projects.values_list(
-                "id", flat=True)
+            my_project_ids = request.user.owned_projects.values_list("id", flat=True)
             queryset = (
-                queryset.filter(participated_projects__id__in=my_project_ids)
-                .exclude(id=request.user.id)
-                .distinct()
+                queryset.filter(participated_projects__id__in=my_project_ids).exclude(id=request.user.id).distinct()
             )
 
     page_obj = paginate_queryset(request, queryset, USERS_PER_PAGE)

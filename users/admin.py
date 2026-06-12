@@ -1,169 +1,56 @@
-from urllib.parse import urlparse
+# users/admin.py
+from django.contrib import admin
+from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
+from django.utils.translation import gettext_lazy as _
 
-from django import forms
-from django.contrib.auth import authenticate
-from django.contrib.auth.forms import (
-    PasswordChangeForm,
-    UserChangeForm,
-    UserCreationForm,
-)
-from django.core.exceptions import ValidationError
-from django.core.validators import URLValidator
-
-from utils import PHONE_PATTERN, normalize_phone_number
+from .forms import CustomUserChangeForm, CustomUserCreationForm
 from .models import User
-from .validators import validate_github_url
 
 
-class RegisterForm(forms.ModelForm):
-    password = forms.CharField(
-        label="Пароль",
-        widget=forms.PasswordInput,
-    )
-    repeat_password = forms.CharField(
-        label="Повтор пароля",
-        widget=forms.PasswordInput,
-    )
+@admin.register(User)
+class UserAdmin(BaseUserAdmin):
+    """Кастомный админ-класс для модели User."""
 
-    class Meta:
-        model = User
-        fields = ("name", "surname", "email", "phone")
-        labels = {
-            "name": "Имя",
-            "surname": "Фамилия",
-            "email": "Email",
-            "phone": "Телефон",
-        }
+    form = CustomUserChangeForm
+    add_form = CustomUserCreationForm
 
-    def clean_phone(self):
-        phone_value = (self.cleaned_data.get("phone") or "").strip()
-
-        if not PHONE_PATTERN.match(phone_value):
-            raise forms.ValidationError(
-                "Телефон должен быть в формате 8XXXXXXXXXX или +7XXXXXXXXXX"
-            )
-
-        return normalize_phone_number(phone_value)
-
-    def clean(self):
-        cleaned_data = super().clean()
-        first_password = cleaned_data.get("password")
-        second_password = cleaned_data.get("repeat_password")
-
-        if first_password and second_password and first_password != second_password:
-            raise forms.ValidationError("Пароли не совпадают")
-
-        return cleaned_data
-
-    def save(self, commit=True):
-        new_user = super().save(commit=False)
-        new_user.set_password(self.cleaned_data["password"])
-
-        if commit:
-            new_user.save()
-
-        return new_user
-
-
-class LoginForm(forms.Form):
-    email = forms.EmailField(label="Email")
-    password = forms.CharField(
-        label="Пароль",
-        widget=forms.PasswordInput,
+    list_display = (
+        "id",
+        "email",
+        "name",
+        "surname",
+        "phone",
+        "is_active",
+        "is_staff",
+        "is_superuser",
     )
 
-    def clean(self):
-        cleaned_data = super().clean()
-        email_value = cleaned_data.get("email")
-        password_value = cleaned_data.get("password")
+    search_fields = ("email", "name", "surname", "phone")
 
-        if not email_value or not password_value:
-            return cleaned_data
+    list_filter = ("is_active", "is_staff", "is_superuser")
 
-        authenticated_user = authenticate(
-            email=email_value,
-            password=password_value,
-        )
-        if authenticated_user is None:
-            raise forms.ValidationError("Неверный email или пароль")
+    ordering = ("-id",)
 
-        self.user = authenticated_user
-        return cleaned_data
+    list_per_page = 25
 
+    list_editable = ("is_active", "is_staff")
 
-class ProfileEditForm(forms.ModelForm):
-    class Meta:
-        model = User
-        fields = (
-            "name",
-            "surname",
-            "avatar",
-            "about",
-            "email",
-            "phone",
-            "github_url",
-        )
-        labels = {
-            "name": "Имя",
-            "surname": "Фамилия",
-            "avatar": "Аватар",
-            "about": "О себе",
-            "email": "Email",
-            "phone": "Телефон",
-            "github_url": "Ссылка на GitHub",
-        }
-
-    def clean_phone(self):
-        phone_value = (self.cleaned_data.get("phone") or "").strip()
-
-        if not PHONE_PATTERN.match(phone_value):
-            raise forms.ValidationError(
-                "Телефон должен быть в формате 8XXXXXXXXXX или +7XXXXXXXXXX"
-            )
-
-        normalized_phone = normalize_phone_number(phone_value)
-        duplicate_phone = (
-            User.objects.exclude(pk=self.instance.pk)
-            .filter(phone=normalized_phone)
-            .exists()
-        )
-
-        if duplicate_phone:
-            raise forms.ValidationError("Этот номер телефона уже используется")
-
-        return normalized_phone
-
-    def clean_github_url(self):
-        github_url = (self.cleaned_data.get("github_url") or "").strip()
-        return validate_github_url(github_url)
-
-
-class UserPasswordChangeForm(PasswordChangeForm):
-    old_password = forms.CharField(
-        label="Текущий пароль",
-        widget=forms.PasswordInput,
-    )
-    new_password1 = forms.CharField(
-        label="Новый пароль",
-        widget=forms.PasswordInput,
-    )
-    new_password2 = forms.CharField(
-        label="Подтверждение пароля",
-        widget=forms.PasswordInput,
+    fieldsets = (
+        (None, {"fields": ("email", "password")}),
+        (_("Личная информация"), {"fields": ("name", "surname", "avatar", "phone", "github_url", "about")}),
+        (_("Права доступа"), {"fields": ("is_active", "is_staff", "is_superuser", "groups", "user_permissions")}),
+        (_("Избранное"), {"fields": ("favorites",), "classes": ("collapse",)}),
+        (_("Важные даты"), {"fields": ("last_login", "date_joined")}),
     )
 
+    add_fieldsets = (
+        (
+            None,
+            {
+                "classes": ("wide",),
+                "fields": ("email", "name", "surname", "phone", "password1", "password2"),
+            },
+        ),
+    )
 
-class CustomUserChangeForm(UserChangeForm):
-    """Кастомная форма для изменения пользователя в админке."""
-
-    class Meta(UserChangeForm.Meta):
-        model = User
-        fields = "__all__"
-
-
-class CustomUserCreationForm(UserCreationForm):
-    """Кастомная форма для создания пользователя в админке."""
-
-    class Meta(UserCreationForm.Meta):
-        model = User
-        fields = "__all__"
+    readonly_fields = ("last_login", "date_joined")

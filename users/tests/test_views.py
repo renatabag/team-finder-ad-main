@@ -44,9 +44,7 @@ class UserViewsTests(TestCase):
         self.assertEqual(response.status_code, HTTPStatus.OK)
 
     def test_user_detail_page_available(self):
-        response = self.client.get(
-            reverse("users:detail", kwargs={"user_id": self.user.id})
-        )
+        response = self.client.get(reverse("users:detail", kwargs={"user_id": self.user.id}))
         self.assertEqual(response.status_code, HTTPStatus.OK)
 
     def test_users_list_page_available(self):

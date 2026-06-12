@@ -8,6 +8,8 @@ app_name = "projects"
 urlpatterns = [
     path("projects/list/", views.project_list_view, name="list"),
     path("project/list/", lambda request: redirect("projects:list")),
+    path("create-project/", views.create_project_view, name="create"),
+    path("create-project/", views.create_project_view, name="create"),
     path("projects/<int:project_id>/", views.project_detail_view, name="detail"),
     path(
         "projects/<int:project_id>/toggle-participate/",

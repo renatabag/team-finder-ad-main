@@ -1,21 +1,30 @@
 from http import HTTPStatus
 
 from django.contrib.auth.decorators import login_required
+from django.db.models import Count
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 
+from core.constants import (
+    PROJECTS_PER_PAGE,  # Константа должна быть в core/constants.py
+)
 from utils import paginate_queryset
 
 from .forms import ProjectForm
 from .models import Project
 
-PROJECTS_PER_PAGE = 12
-
 
 def project_list_view(request):
-    """Список всех проектов."""
-    queryset = Project.objects.select_related("owner").order_by("-created_at")
+    """Список всех проектов с оптимизацией запросов."""
+    # Оптимизация: добавляем количество участников (один дополнительный запрос)
+    queryset = (
+        Project.objects.select_related("owner")  # Загружаем владельца (JOIN, 1 запрос)
+        .prefetch_related("participants")  # Предзагружаем участников (1 запрос)
+        .annotate(participants_count=Count("participants"))  # Добавляем аннотацию с количеством
+        .order_by("-created_at")
+    )
+
     page_obj = paginate_queryset(request, queryset, PROJECTS_PER_PAGE)
 
     return render(
@@ -26,9 +35,12 @@ def project_list_view(request):
 
 
 def project_detail_view(request, project_id):
-    """Детальная страница проекта."""
-    project = get_object_or_404(Project.objects.select_related(
-        "owner").prefetch_related("participants"), id=project_id, )
+    """Детальная страница проекта с оптимизацией."""
+    # Оптимизация: загружаем всё необходимое за 2-3 запроса
+    project = get_object_or_404(
+        Project.objects.select_related("owner").prefetch_related("participants"),
+        id=project_id,
+    )
 
     return render(
         request,
@@ -161,10 +173,11 @@ def toggle_favorite_view(request, project_id):
 
 @login_required
 def favorite_projects_view(request):
-    """Список избранных проектов пользователя."""
+    """Список избранных проектов пользователя с оптимизацией."""
     queryset = (
         request.user.favorites.select_related("owner")
         .prefetch_related("participants")
+        .annotate(participants_count=Count("participants"))
         .order_by("-created_at")
     )
 

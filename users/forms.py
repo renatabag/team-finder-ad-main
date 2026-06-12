@@ -1,10 +1,14 @@
-from urllib.parse import urlparse
 
 from django import forms
 from django.contrib.auth import authenticate
-from django.contrib.auth.forms import PasswordChangeForm
+from django.contrib.auth.forms import (
+    PasswordChangeForm,
+    UserChangeForm,
+    UserCreationForm,
+)
 
 from utils import PHONE_PATTERN, normalize_phone_number
+
 from .models import User
 from .validators import validate_github_url
 
@@ -33,9 +37,7 @@ class RegisterForm(forms.ModelForm):
         phone_value = (self.cleaned_data.get("phone") or "").strip()
 
         if not PHONE_PATTERN.match(phone_value):
-            raise forms.ValidationError(
-                "Телефон должен быть в формате 8XXXXXXXXXX или +7XXXXXXXXXX"
-            )
+            raise forms.ValidationError("Телефон должен быть в формате 8XXXXXXXXXX или +7XXXXXXXXXX")
 
         return normalize_phone_number(phone_value)
 
@@ -111,16 +113,10 @@ class ProfileEditForm(forms.ModelForm):
         phone_value = (self.cleaned_data.get("phone") or "").strip()
 
         if not PHONE_PATTERN.match(phone_value):
-            raise forms.ValidationError(
-                "Телефон должен быть в формате 8XXXXXXXXXX или +7XXXXXXXXXX"
-            )
+            raise forms.ValidationError("Телефон должен быть в формате 8XXXXXXXXXX или +7XXXXXXXXXX")
 
         normalized_phone = normalize_phone_number(phone_value)
-        duplicate_phone = (
-            User.objects.exclude(pk=self.instance.pk)
-            .filter(phone=normalized_phone)
-            .exists()
-        )
+        duplicate_phone = User.objects.exclude(pk=self.instance.pk).filter(phone=normalized_phone).exists()
 
         if duplicate_phone:
             raise forms.ValidationError("Этот номер телефона уже используется")
@@ -145,3 +141,22 @@ class UserPasswordChangeForm(PasswordChangeForm):
         label="Подтверждение пароля",
         widget=forms.PasswordInput,
     )
+
+
+# ========== ФОРМЫ ДЛЯ АДМИНКИ ==========
+
+
+class CustomUserChangeForm(UserChangeForm):
+    """Кастомная форма для изменения пользователя в админке."""
+
+    class Meta(UserChangeForm.Meta):
+        model = User
+        fields = "__all__"
+
+
+class CustomUserCreationForm(UserCreationForm):
+    """Кастомная форма для создания пользователя в админке."""
+
+    class Meta(UserCreationForm.Meta):
+        model = User
+        fields = "__all__"

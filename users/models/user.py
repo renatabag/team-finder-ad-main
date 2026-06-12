@@ -1,13 +1,15 @@
 from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin
 from django.db import models
+from django.utils import timezone  # ← ДОБАВИТЬ ЭТОТ ИМПОРТ
 
 from core.constants import (
-    USER_NAME_MAX_LEN,
-    USER_SURNAME_MAX_LEN,
-    USER_PHONE_MAX_LEN,
     USER_ABOUT_MAX_LEN,
+    USER_NAME_MAX_LEN,
+    USER_PHONE_MAX_LEN,
+    USER_SURNAME_MAX_LEN,
 )
 from utils import build_avatar_file
+
 from .managers import UserManager
 
 
@@ -21,6 +23,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     about = models.TextField(max_length=USER_ABOUT_MAX_LEN, blank=True)
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
+    date_joined = models.DateTimeField(default=timezone.now)  # ← ДОБАВИТЬ ЭТУ СТРОКУ
     favorites = models.ManyToManyField(
         "projects.Project",
         related_name="interested_users",

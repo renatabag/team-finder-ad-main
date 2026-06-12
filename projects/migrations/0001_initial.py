@@ -28,9 +28,7 @@ class Migration(migrations.Migration):
                 ("github_url", models.URLField(blank=True)),
                 (
                     "status",
-                    models.CharField(
-                        choices=[("open", "Open"), ("closed", "Closed")], max_length=6
-                    ),
+                    models.CharField(choices=[("open", "Open"), ("closed", "Closed")], max_length=6),
                 ),
             ],
             options={

@@ -1,7 +1,9 @@
 from urllib.parse import urlparse
+
 from django import forms
 from django.core.exceptions import ValidationError
 from django.core.validators import URLValidator
+
 from projects.models import Project
 
 
@@ -51,19 +53,16 @@ class ProjectForm(forms.ModelForm):
 
         domain = domain.split(":")[0]
 
-        if not any(
-            domain == allowed or domain.endswith(f".{allowed}")
-            for allowed in allowed_domains
-        ):
+        if not any(domain == allowed or domain.endswith(f".{allowed}") for allowed in allowed_domains):
             raise ValidationError(
                 "Ссылка должна вести на GitHub (github.com, "
-                "raw.githubusercontent.com, gist.github.com или api.github.com)")
+                "raw.githubusercontent.com, gist.github.com или api.github.com)"
+            )
 
         path = parsed_url.path.strip("/")
         if not path:
             raise ValidationError(
-                "Укажите полную ссылку на репозиторий, "
-                "например: https://github.com/username/repo"
+                "Укажите полную ссылку на репозиторий, " "например: https://github.com/username/repo"
             )
 
         return github_url

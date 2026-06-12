@@ -8,22 +8,52 @@
 {% endblock %}
 
 {% block page_id %}favorites{% endblock %}
+
 {% block content %}
 <div class="project-container">
     <div class="project-header">
         <h2 class="project-title">Избранные проекты</h2>
+        <a href="{% url 'projects:list' %}" class="back-link">← Назад к проектам</a>
     </div>
     <p class="project-subtitle">Проекты, которые вас заинтересовали</p>
 
     <div class="projects-grid">
-        {% for project in projects %}
-        {% include 'includes/project-card.html' %}
-        {% empty %}
-        {% include 'includes/empty-project-card.html' with empty_title="Пока нет избранных проектов" empty_message="Добавляйте проекты в избранное, чтобы не потерять их" button_link="/projects/list" button_text="Посмотреть проекты" %}
-        {% endfor %}
+        {% if projects.paginator.count == 0 %}
+            {# Показываем пустой блок, если нет избранных проектов #}
+            <div style="text-align: center; padding: 60px 20px; background: #f9f9f9; border-radius: 10px;">
+                <div style="font-size: 48px; margin-bottom: 20px;">⭐</div>
+                <h3>Пока нет избранных проектов</h3>
+                <p>Добавляйте проекты в избранное, чтобы не потерять их</p>
+                <a href="/projects/list/" style="display: inline-block; background: black; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; margin-top: 20px;">
+                    Посмотреть проекты
+                </a>
+            </div>
+        {% else %}
+            {% for project in projects %}
+                {% include 'includes/project-card.html' with hide_favorite_btn=False %}
+            {% endfor %}
+        {% endif %}
     </div>
+
+    {# Пагинация #}
+    {% if projects.has_other_pages %}
+    <div class="pagination">
+        {% if projects.has_previous %}
+            <a href="?page=1" class="page-link">&laquo; Первая</a>
+            <a href="?page={{ projects.previous_page_number }}" class="page-link">Назад</a>
+        {% endif %}
+
+        <span class="current-page">
+            Страница {{ projects.number }} из {{ projects.paginator.num_pages }}
+        </span>
+
+        {% if projects.has_next %}
+            <a href="?page={{ projects.next_page_number }}" class="page-link">Вперёд</a>
+            <a href="?page={{ projects.paginator.num_pages }}" class="page-link">Последняя &raquo;</a>
+        {% endif %}
+    </div>
+    {% endif %}
 
     {% include 'includes/project-fav-toggle.js' %}
 </div>
-
 {% endblock %}

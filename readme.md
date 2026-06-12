@@ -48,14 +48,29 @@ cp .env_example .env
 Пример содержимого `.env`:
 
 ```env
+Django базовые настройки
 DJANGO_SECRET_KEY=dev-secret-key
 DJANGO_DEBUG=True
 
+Разрешённые хосты (для разработки)
+DJANGO_ALLOWED_HOSTS=localhost,127.0.0.1
+
+Для production (раскомментировать при деплое)
+DJANGO_ALLOWED_HOSTS=example.com,www.example.com,api.example.com
+
+PostgreSQL
 POSTGRES_DB=teamfinder
 POSTGRES_USER=postgres
 POSTGRES_PASSWORD=postgres
 POSTGRES_HOST=localhost
 POSTGRES_PORT=5432
+
+Опционально: URL для логина (если нужно переопределить)
+LOGIN_URL=/accounts/login/
+
+Опционально: статика и медиа (если нужно кастомное расположение)
+STATIC_URL=/static/
+MEDIA_URL=/media/
 ```
 
 ---

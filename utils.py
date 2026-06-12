@@ -67,10 +67,7 @@ def get_avatar_font(font_size: int = AVATAR_FONT_SIZE):
         return ImageFont.load_default(size=font_size)
 
 
-def build_avatar_file(
-        name: str,
-        email: str,
-        size: int = AVATAR_SIZE) -> ContentFile:
+def build_avatar_file(name: str, email: str, size: int = AVATAR_SIZE) -> ContentFile:
     """
     Генерация avatar-файла на основе имени и email.
 
@@ -99,8 +96,7 @@ def build_avatar_file(
     text_x = (size - text_width) / 2
     text_y = (size - text_height) / 2
 
-    canvas.text((text_x, text_y), first_letter,
-                fill=AVATAR_TEXT_COLOR, font=font)
+    canvas.text((text_x, text_y), first_letter, fill=AVATAR_TEXT_COLOR, font=font)
 
     binary_stream = BytesIO()
     avatar_image.save(binary_stream, format="PNG")
