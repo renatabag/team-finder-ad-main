@@ -43,5 +43,5 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     def save(self, *args, **kwargs):
         if not self.avatar:
-            self.avatar = build_avatar_file(self.name, self.email)
+            self.avatar = build_avatar_file(self.name, self.email)  # ← здесь
         super().save(*args, **kwargs)

@@ -10,45 +10,45 @@
 {% block page_id %}projects-list{% endblock %}
 
 {% block content %}
-<div class="project-container">
-    <div class="project-header">
-        <h2 class="project-title">Актуальные проекты</h2>
+<div class="project-container" style="max-width: 1200px; margin: 0 auto; padding: 20px;">
+    <div class="project-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;">
+        <h2 class="project-title" style="margin: 0;">Актуальные проекты</h2>
         {% if projects %}
-            <a href="{% url 'projects:create' %}" class="black-button">+ Создать проект</a>
+            <a href="{% url 'projects:create' %}" class="black-button" style="background: black; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">+ Создать проект</a>
         {% endif %}
     </div>
-    <p class="project-subtitle">Найдите интересный проект и присоединитесь к команде</p>
+    <p class="project-subtitle" style="text-align: center; color: #6c757d; margin: 15px 0 30px;">Найдите интересный проект и присоединитесь к команде</p>
 
-    <div class="projects-grid">
-    {% if projects.paginator.count == 0 %}
-        {# Пока нет проектов #}
-        <div class="empty-project-card not-favorite">
-            <h3>Пока нет проектов</h3>
-            <p>Создавайте проекты и делитесь ими с другими пользователями!</p>
-            <a href="{% url 'projects:create' %}" class="black-button">+ Создать проект</a>
-        </div>
-    {% else %}
-        {% for project in projects %}
-            {% include 'includes/project-card.html' %}
-        {% endfor %}
-    {% endif %}
-</div>
+    <div class="projects-grid" style="display: flex; flex-wrap: wrap; gap: 20px; justify-content: center;">
+        {% if projects.paginator.count == 0 %}
+            <div class="empty-project-card not-favorite" style="text-align: center; padding: 80px 20px; background: #f9f9f9; border-radius: 10px; width: 100%; max-width: 500px; margin: 0 auto;">
+                <div style="font-size: 64px; margin-bottom: 20px;">📁</div>
+                <h3 style="margin: 0 0 10px;">Пока нет проектов</h3>
+                <p style="color: #6c757d; margin-bottom: 30px;">Создавайте проекты и делитесь ими с другими пользователями!</p>
+                <a href="{% url 'projects:create' %}" class="black-button" style="display: inline-block; background: black; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px;">+ Создать проект</a>
+            </div>
+        {% else %}
+            {% for project in projects %}
+                {% include 'includes/project-card.html' %}
+            {% endfor %}
+        {% endif %}
+    </div>
 
-    {# Пагинация - добавлена как в favorite_projects.html #}
+    {# Пагинация #}
     {% if projects.has_other_pages %}
-    <div class="pagination">
+    <div class="pagination" style="display: flex; justify-content: center; gap: 10px; margin-top: 40px;">
         {% if projects.has_previous %}
-            <a href="?page=1" class="page-link">&laquo; Первая</a>
-            <a href="?page={{ projects.previous_page_number }}" class="page-link">Назад</a>
+            <a href="?page=1" class="page-link" style="padding: 8px 12px; background: #f0f0f0; text-decoration: none; border-radius: 5px;">&laquo; Первая</a>
+            <a href="?page={{ projects.previous_page_number }}" class="page-link" style="padding: 8px 12px; background: #f0f0f0; text-decoration: none; border-radius: 5px;">Назад</a>
         {% endif %}
 
-        <span class="current-page">
+        <span class="current-page" style="padding: 8px 12px; background: #007bff; color: white; border-radius: 5px;">
             Страница {{ projects.number }} из {{ projects.paginator.num_pages }}
         </span>
 
         {% if projects.has_next %}
-            <a href="?page={{ projects.next_page_number }}" class="page-link">Вперёд</a>
-            <a href="?page={{ projects.paginator.num_pages }}" class="page-link">Последняя &raquo;</a>
+            <a href="?page={{ projects.next_page_number }}" class="page-link" style="padding: 8px 12px; background: #f0f0f0; text-decoration: none; border-radius: 5px;">Вперёд</a>
+            <a href="?page={{ projects.paginator.num_pages }}" class="page-link" style="padding: 8px 12px; background: #f0f0f0; text-decoration: none; border-radius: 5px;">Последняя &raquo;</a>
         {% endif %}
     </div>
     {% endif %}

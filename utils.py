@@ -70,25 +70,17 @@ def get_avatar_font(font_size: int = AVATAR_FONT_SIZE):
 def build_avatar_file(name: str, email: str, size: int = AVATAR_SIZE) -> ContentFile:
     """
     Генерация avatar-файла на основе имени и email.
-
-    Args:
-        name: Имя пользователя
-        email: Email пользователя
-        size: Размер аватара в пикселях (по умолчанию AVATAR_SIZE)
-
-    Returns:
-        ContentFile: Сгенерированный файл аватара
     """
     bg_color = pick_avatar_background(email or name)
 
     avatar_image = Image.new("RGB", (size, size), bg_color)
     canvas = ImageDraw.Draw(avatar_image)
 
-    first_letter = (name[:1] if name else DEFAULT_AVATAR_LETTER).upper()
+    first_letter = (name[:1] if name else DEFAULT_AVATAR_LETTER).upper()  # ← первая буква
 
     font = get_avatar_font(AVATAR_FONT_SIZE)
 
-    # Центрируем текст (для pillow==11.3.0 используем textbbox)
+    # Центрируем текст
     bbox = canvas.textbbox((0, 0), first_letter, font=font)
     text_width = bbox[2] - bbox[0]
     text_height = bbox[3] - bbox[1]
@@ -101,7 +93,6 @@ def build_avatar_file(name: str, email: str, size: int = AVATAR_SIZE) -> Content
     binary_stream = BytesIO()
     avatar_image.save(binary_stream, format="PNG")
 
-    # Создаём безопасное имя файла
     safe_email = email.replace("@", "_").replace(".", "_")
     file_name = f"avatar_{safe_email}.png"
 
